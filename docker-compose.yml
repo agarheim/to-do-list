@@ -1,0 +1,66 @@
+version: '3.8'
+services:
+    manager-nginx:
+        build:
+            context: ./docker/development
+            dockerfile: ./nginx.docker
+        volumes:
+            - ./:/app
+        depends_on:
+            - manager-php-fpm
+        ports:
+            - "8086:80"
+    manager-php-fpm:
+        build:
+            context: ./docker/development
+            dockerfile: ./php-fpm.docker
+        volumes:
+            - ./:/app
+        depends_on:
+            - mariadb
+            - mailer
+        ports:
+            - '6001:6001'
+    manager-php-cli:
+        build:
+            context: ./docker/development
+            dockerfile: ./php-cli.docker
+        volumes:
+            - ./:/app
+            - composer:/root/.composer/cache
+        depends_on:
+            - mariadb
+            - mailer
+    manager-node-watch:
+        image: node:17.9-alpine
+        volumes:
+            - ./:/app
+        working_dir: /app
+        command: sh -c "until [ -f .ready ] ; do sleep 1 ; done && npm run watch"
+    manager-node:
+        image: node:17.9-alpine
+        volumes:
+            - ./:/app
+        working_dir: /app
+
+    mariadb:
+        image: mariadb:10.8.2
+        restart: always
+        environment:
+                MYSQL_ROOT_PASSWORD: root
+                MYSQL_DATABASE: mydb
+                MYSQL_USER: umysql
+                MYSQL_PASSWORD: rooting
+        volumes:
+            - ../database:/var/lib/mysql
+        ports:
+            - "9909:3306"
+    mailer:
+        image: mailhog/mailhog:v1.0.1
+        ports:
+            - "1025:1025"
+            - "8025:8025"
+volumes:
+    manager-postgres:
+    composer:
+
